@@ -27,5 +27,8 @@ namespace Blog_Website.Models
         public DateTime? UpdatedDate { get; set; }
 
         public string? Category { get; set; }
+
+        public bool Is_Deleted { get; set; } = false;
+
     }
 }

@@ -18,8 +18,9 @@ namespace Blog_Website.Models
 
         public DateTime CreatedDate { get; set; } // Created date
         public DateTime? UpdatedDate { get; set; } // Updated date (nullable)
+        public bool Is_Deleted { get; set; } = false;
 
         // Navigation property
-       // public virtual ICollection<Blogg_Model> BlogPosts { get; set; } // Relation to BloggModel
+        // public virtual ICollection<Blogg_Model> BlogPosts { get; set; } // Relation to BloggModel
     }
 }

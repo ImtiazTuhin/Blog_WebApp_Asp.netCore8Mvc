@@ -31,8 +31,10 @@ namespace Blog_Website.Models
 
         public DateTime? UpdatedDate { get; set; } // Updated date (nullable)
 
+        public bool Is_Deleted { get; set; } = false;
+
         // Navigation properties
-       // public virtual User User { get; set; } // Navigation property for User model
+        // public virtual User User { get; set; } // Navigation property for User model
         public virtual Blogg_Model Blog { get; set; } // Navigation property for Blogg_Model
     }
 }

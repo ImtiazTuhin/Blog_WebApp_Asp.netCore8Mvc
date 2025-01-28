@@ -4,6 +4,7 @@ using Blog_Website.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Blog_Website.Data.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250128181127_public is_Deeleted field added in all models")]
+    partial class publicis_Deeletedfieldaddedinallmodels
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -46,7 +49,7 @@ namespace Blog_Website.Data.Migrations
                     b.Property<string>("ImagePath")
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<bool>("Is_Deleted")
+                    b.Property<bool?>("Is_Deleted")
                         .HasColumnType("bit");
 
                     b.Property<string>("Name")
@@ -82,7 +85,7 @@ namespace Blog_Website.Data.Migrations
                         .HasMaxLength(255)
                         .HasColumnType("nvarchar(255)");
 
-                    b.Property<bool>("Is_Deleted")
+                    b.Property<bool?>("Is_Deleted")
                         .HasColumnType("bit");
 
                     b.Property<string>("Name")
@@ -113,7 +116,7 @@ namespace Blog_Website.Data.Migrations
                     b.Property<DateTime>("CreatedDate")
                         .HasColumnType("datetime2");
 
-                    b.Property<bool>("Is_Deleted")
+                    b.Property<bool?>("Is_Deleted")
                         .HasColumnType("bit");
 
                     b.Property<int>("PostId")

@@ -3,6 +3,7 @@ using Blog_Website.Models;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System.Reflection.Metadata;
+using System.Linq;
 
 namespace Blog_Website.Controllers
 {
@@ -48,7 +49,9 @@ namespace Blog_Website.Controllers
 
             // Fetch recent posts (e.g., last 5 posts)
             var recentPosts = _context.Bloggers
+                  .Where(post => !post.Is_Deleted)
                 .OrderByDescending(post => post.CreatedDate)
+                
                 .Take(5)
                 .ToList();
 
@@ -192,16 +195,15 @@ namespace Blog_Website.Controllers
         }
 
         [HttpPost]
+
         public IActionResult DeletePostConfirmed(int id)
         {
-            var post = _context.Bloggers.FirstOrDefault(b => b.Id == id);
-
+            var post= _context.Bloggers.FirstOrDefault(p=>p.Id == id);
             if (post != null)
             {
-                _context.Bloggers.Remove(post);
+                post.Is_Deleted = true;
                 _context.SaveChanges();
             }
-
             return RedirectToAction("Index");
         }
 
@@ -273,7 +275,9 @@ namespace Blog_Website.Controllers
         public IActionResult AllPosts()
         {
             // Fetch all blog posts from the database
-            var blogPosts = _context.Bloggers.ToList();
+            var blogPosts = _context.Bloggers
+                .Where(p=>!p.Is_Deleted)
+                .ToList();
 
             // Pass the list of blog posts to the view
             return View(blogPosts);
