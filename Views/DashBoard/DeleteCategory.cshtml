@@ -1,0 +1,18 @@
+﻿@model Blog_Website.Models.Category
+
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<div class="container mt-5">
+    <h2 class="text-center text-danger">Delete Category</h2>
+    <hr />
+    <div class="alert alert-warning">
+        Are you sure you want to delete the category <strong>@Model.Name</strong>?
+    </div>
+    <form asp-action="DeleteCategoryConfirmed" method="post">
+        <input type="hidden" name="Id" value="@Model.CategoryId" />
+        <button type="submit" class="btn btn-danger">Delete</button>
+        <a href="@Url.Action("Categories", "DashBoard")" class="btn btn-secondary">Cancel</a>
+    </form>
+</div>

@@ -1,0 +1,53 @@
+﻿@model Blog_Website.Models.Blogg_Model
+
+<div class="container mt-5">
+    <h1 class="mb-4">Edit Post</h1>
+
+    <form asp-action="EditPost" asp-controller="DashBoard" method="post" enctype="multipart/form-data">
+        <input type="hidden" name="Id" value="@Model.Id" />
+
+        <div class="mb-3">
+            <label for="Name" class="form-label">Author</label>
+            <input type="text" class="form-control" id="Name" name="Name" value="@Model.Name" readonly />
+        </div>
+
+        <div class="mb-3">
+            <label for="BlogTitle" class="form-label">Title</label>
+            <input type="text" class="form-control" id="BlogTitle" name="BlogTitle" value="@Model.BlogTitle" required />
+        </div>
+
+        <div class="mb-3">
+            <label for="Category" class="form-label">Category</label>
+            <select class="form-select" id="Category" name="Category" required>
+                <option value="@Model.Category" selected>@Model.Category</option>
+                <option value=Economics>Economics</option>
+                <option value="Technology" >Technology</option>
+                <option value="Lifestyle" >Lifestyle</option>
+                <option value="Travelling">Travelling</option>
+                <option value="Politics"> Politics</option>
+                <option value="Others" >Others</option>
+            </select>
+
+
+        </div>
+
+        <div class="mb-3">
+            <label for="Content" class="form-label">Content</label>
+            <textarea class="form-control" id="Content" name="Content" rows="10" required>@Model.Content</textarea>
+        </div>
+
+        <div class="mb-3">
+            <label for="Image" class="form-label">Upload Image</label>
+            <input type="file" class="form-control" id="Image" name="Image" accept="image/*" />
+            @if (!string.IsNullOrEmpty(Model.ImagePath))
+            {
+                <div class="mt-2">
+                    <img src="@Model.ImagePath" alt="Current Image" class="img-fluid" style="max-height: 150px;" />
+                </div>
+            }
+        </div>
+
+        <button type="submit" class="btn btn-primary">Save Changes</button>
+        <a href="@Url.Action("PostDetail", "DashBoard", new { id = Model.Id })" class="btn btn-secondary">Cancel</a>
+    </form>
+</div>

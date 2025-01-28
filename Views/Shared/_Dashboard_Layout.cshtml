@@ -1,0 +1,59 @@
+﻿@model Blog_Website.Models.Blogg_Model
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+<!-- Include Font Awesome CSS -->
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+
+<div class="container-fluid">
+    <div class="row">
+        <!-- Sidebar -->
+        <nav class="col-md-3 col-lg-2 sidebar bg-dark border-end">
+            <h3 class="text-center py-3"><i class="fas fa-blog"></i> Blog Dashboard</h3>
+            <a href="#dashboard" class="d-block py-2 px-3"><i class="fas fa-tachometer-alt"></i> Dashboard</a>
+            <div class="user-info p-3 bg-danger text-white rounded">
+                <p><i class="fas fa-user"></i> @ViewBag.UserName</p>
+                <p><i class="fas fa-id-badge"></i> ID: @ViewBag.UserId</p>
+                <p style="font-size:8px"><i class="fas fa-envelope"></i> @ViewBag.UserEmail</p>
+            </div>
+
+            <!-- Manage Posts -->
+            <div class="dropdown mt-3">
+                <a class="dropdown-toggle d-block py-2 px-3" id="managePostsDropdown" data-bs-toggle="dropdown" href="#" role="button" aria-expanded="false">
+                    <i class="fas fa-pen"></i> Manage Posts
+                </a>
+                <ul class="dropdown-menu bg-light" aria-labelledby="managePostsDropdown">
+                    <li><a class="dropdown-item" href="@Url.Action("CreatePost", "DashBoard")"> <i class="fas fa-plus"></i> Create Post</a></li>
+                    <li><a class="dropdown-item" href="@Url.Action("AllPosts", "DashBoard")"> <i class="fas fa-plus"></i> All Post</a></li>
+                    <li><a class="dropdown-item" href="@Url.Action("EditPost", "DashBoard", new { id = Model.Id })"><i class="fas fa-edit"></i> Edit Post</a></li>
+
+                </ul>
+            </div>
+            <a href="#categories" class="d-block py-2 px-3"><i class="fas fa-tags"></i> Manage Categories</a>
+            <a href="#comments" class="d-block py-2 px-3"><i class="fas fa-comments"></i> Manage Comments</a>
+            <a href="#users" class="d-block py-2 px-3"><i class="fas fa-users"></i> Manage Users</a>
+            <a href="#settings" class="d-block py-2 px-3"><i class="fas fa-cog"></i> Settings</a>
+            <a href="@Url.Action("Logout", "UserManage")" class="d-block py-2 px-3"><i class="fas fa-sign-out-alt"></i> Logout</a>
+        </nav>
+
+        <!-- Main Content -->
+        <main class="col-md-9 col-lg-10 main-content">
+            <!-- Top Navbar -->
+            <nav class="navbar navbar-expand-lg navbar-light bg-light mb-3">
+                <div class="container-fluid">
+                    <a class="navbar-brand" href="#"><i class="fas fa-home"></i> Blog Dashboard</a>
+                    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                        <span class="navbar-toggler-icon"></span>
+                    </button>
+                    <div class="collapse navbar-collapse" id="navbarNav">
+                        <ul class="navbar-nav ms-auto">
+                            <li class="nav-item">
+                                <a class="nav-link" href="#profile"><i class="fas fa-user-circle"></i> Profile</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" href="#logout"><i class="fas fa-sign-out-alt"></i> Logout</a>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </nav>

@@ -1,0 +1,86 @@
+﻿@model Blog_Website.Models.Blogg_Model
+
+<div class="container mt-5">
+    <h1 class="mb-4">@Model.BlogTitle</h1>
+
+    <p class="text-muted">
+        <strong>Author:</strong> @Model.Name |
+        <strong>Category:</strong> @Model.Category |
+        <strong>Posted On:</strong> @Model.CreatedDate.ToString("MMMM dd, yyyy")
+    </p>
+
+    <hr />
+
+    <div class="mb-4">
+        @if (!string.IsNullOrEmpty(Model.ImagePath))
+        {
+            <img src="@Model.ImagePath" alt="Blog Image" class="img-fluid" />
+        }
+    </div>
+
+    <p>@Model.Content</p>
+
+    <div class="mt-4">
+        <a href="@Url.Action("EditPost", "DashBoard", new { id = Model.Id })" class="btn btn-warning">
+            <i class="fas fa-edit"></i> Edit
+        </a>
+
+        <form asp-action="DeletePostConfirmed" asp-controller="DashBoard" method="post" class="d-inline-block">
+            <input type="hidden" name="id" value="@Model.Id" />
+            <button type="submit" class="btn btn-danger" onclick="return confirm('Are you sure you want to delete this post?');">
+                <i class="fas fa-trash"></i> Delete
+            </button>
+        </form>
+
+
+        <a href="@Url.Action("Index", "DashBoard")" class="btn btn-primary">
+            <i class="fas fa-arrow-left"></i> Back to Dashboard
+        </a>
+    </div>
+
+    <!-- Comments Section -->
+    <h3 class="mt-5">Comments</h3>
+    @{
+        var comments = ViewBag.Comments as IEnumerable<Blog_Website.Models.Comment>;
+    }
+
+    @if (comments != null && comments.Any())
+    {
+        <ul class="list-unstyled">
+            @foreach (var comment in comments)
+            {
+                <li class="mb-3 border-bottom pb-2">
+                    <div>
+                        <strong>@comment.CommenterName</strong>
+                        <span class="text-muted">on @comment.CreatedDate.ToString("MMMM dd, yyyy hh:mm tt")</span>
+                    </div>
+                    <p class="mt-2">@comment.Text</p>
+                </li>
+            }
+        </ul>
+    }
+    else
+    {
+        <p>No comments available.</p>
+    }
+
+
+    <!-- Add Comment Form -->
+    <div class="mt-4">
+        <h4>Leave a Comment</h4>
+        <form asp-action="AddComment" asp-controller="DashBoard" method="post">
+            <input type="hidden" name="PostId" value="@Model.Id" />
+            <input type="hidden" name="UserId" value="@Model.UserId" />
+            <div class="form-group">
+                <label for="CommenterName">Your Name</label>
+                <input type="text" name="CommenterName" id="CommenterName" class="form-control" required />
+            </div>
+            <div class="form-group mt-2">
+                <label for="Text">Your Comment</label>
+                <textarea name="Text" id="Text" class="form-control" rows="4" required></textarea>
+            </div>
+            <button type="submit" class="btn btn-primary mt-2">Submit</button>
+        </form>
+    </div>
+
+</div>

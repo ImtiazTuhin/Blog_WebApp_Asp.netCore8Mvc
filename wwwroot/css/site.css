@@ -1,0 +1,57 @@
+html {
+  font-size: 14px;
+}
+
+@media (min-width: 768px) {
+  html {
+    font-size: 16px;
+  }
+}
+
+.btn:focus, .btn:active:focus, .btn-link.nav-link:focus, .form-control:focus, .form-check-input:focus {
+  box-shadow: 0 0 0 0.1rem white, 0 0 0 0.25rem #258cfb;
+}
+
+html {
+  position: relative;
+  min-height: 100%;
+}
+
+body {
+  margin-bottom: 60px;
+}
+
+/* Dashboard Design  */
+
+.dashboard-body {
+    overflow-x: hidden;
+}
+
+.sidebar {
+    min-height: 100vh;
+    background-color: #343a40;
+    color: white;
+}
+
+    .sidebar a {
+        color: #ddd;
+        text-decoration: none;
+        padding: 10px 20px;
+        display: block;
+        border-bottom: 1px solid #495057;
+    }
+
+        .sidebar a:hover {
+            background-color: #495057;
+        }
+
+.main-content {
+    padding: 20px;
+}
+
+.dashboard-widget {
+    background-color: #f8f9fa;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    padding: 20px;
+}
