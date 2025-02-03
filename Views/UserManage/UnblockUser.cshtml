@@ -1,0 +1,88 @@
+﻿@model IEnumerable<Blog_Website.Models.User>
+
+<div class="container mt-5">
+    <h1 class="mb-4">Blocked Users</h1>
+
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>#</th>
+                <th>User ID</th>
+                <th>First Name</th>
+                <th>Last Name</th>
+                <th>Email</th>
+                
+                <th>Created Date</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            @if (Model != null && Model.Any())
+            {
+                int count = 1;
+                foreach (var users in Model)
+                {
+                    <tr>
+                        <td>@count</td>
+                        <td>@users.Id</td>
+                        <td>@users.FirstName</td>
+                        <td>@users.LastName</td>
+                        <td>@users.Email</td>
+                        
+                        <td>@users.CreatedDate?.ToString("MMMM dd, yyyy")</td>
+                        <td>
+                            <!--<a href="@Url.Action("Editusers", "DashBoard", new { id = users.Id })" class="btn btn-warning btn-sm">
+                                <i class="fas fa-edit"></i> Edit
+                            </a> -->
+                            
+
+                            <!-- Button to trigger Delete Modal -->
+                            <button class="btn btn-danger btn-sm" data-bs-toggle="modal" data-bs-target="#deleteModal" data-userid="@users.Id">
+                                <i class="fas fa-trash"></i> UnBlock
+                            </button>
+                            <!-- Delete Confirmation Modal -->
+                            <div class="modal fade" id="deleteModal" tabindex="-1" aria-labelledby="deleteModalLabel" aria-hidden="true">
+                                <div class="modal-dialog">
+                                    <div class="modal-content">
+                                        <div class="modal-header">
+                                            <h5 class="modal-title bg-danger" id="deleteModalLabel">Confirm UnBlocking User</h5>
+                                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                        </div>
+                                        <div class="modal-body">
+                                            Are you sure you want to UNBLOCK this user?
+                                        </div>
+                                        <div class="modal-footer">
+                                            <form asp-action="UnblockUser" asp-controller="UserManage" method="post" class="d-inline-block">
+
+                                                <input type="hidden" name="Id" value="@users.Id" />
+                                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                                                <button type="submit" class="btn btn-danger">UnBlock</button>
+                                            </form>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </td>
+                    </tr>
+                    count++;
+                }
+            }
+            else
+            {
+                <tr>
+                    <td colspan="8" class="text-center">No Users available.</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+
+    <div class="mt-4">
+        <a href="@Url.Action("Index", "DashBoard")" class="btn btn-primary">
+            <i class="fas fa-arrow-left"></i> Back to Dashboard
+        </a>
+    </div>
+</div>
+
+
+
+

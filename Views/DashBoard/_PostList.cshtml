@@ -1,0 +1,20 @@
+﻿@model IEnumerable<dynamic>
+
+@foreach (var post in Model)
+{
+    <div class="post">
+        <h3>@post.BlogTitle</h3>
+        <p>@post.Content</p>
+        <p><strong>Category:</strong> @post.Category</p>
+
+        <div class="comments">
+            <h4>Comments:</h4>
+            @foreach (var comment in post.Comments)
+            {
+                <div class="comment">
+                    <p><strong>@comment.CommenterName</strong>: @comment.Text</p>
+                </div>
+            }
+        </div>
+    </div>
+}

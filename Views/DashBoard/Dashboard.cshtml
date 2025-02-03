@@ -31,17 +31,28 @@
             </div>
 
             <div class="dropdown mt-3">
-                <a class="dropdown-toggle d-block py-2 px-3" id="managePostsDropdown" data-bs-toggle="dropdown" href="#" role="button" aria-expanded="false">
-                    <i class="fas fa-tags"></i> Manage Categories
+                <a class="dropdown-toggle d-block py-2 px-3" id="manageCatsDropdown" data-bs-toggle="dropdown" href="#" role="button" aria-expanded="false">
+                    <i class="fas fa-tags"></i>Manage<br/>Categories
                 </a>
-                <ul class="dropdown-menu bg-info" aria-labelledby="managePostsDropdown">
-                    <li><a class="dropdown-item" href="@Url.Action("CreateCategory", "DashBoard")"> <i class="fas fa-plus"></i> Create Category</a></li>
-                    <li><a class="dropdown-item" href="@Url.Action("Categories", "DashBoard")"> <i class="fas fa-list"></i> Category List</a></li>
+                <ul class="dropdown-menu bg-info" aria-labelledby="manageCatsDropdown">
+                    <li><a class="dropdown-item" href="@Url.Action("CreateCategory", "DashBoard")"> <i class="fas fa-plus"></i>Create Category</a></li>
+                    <li><a class="dropdown-item" href="@Url.Action("Categories", "DashBoard")"> <i class="fas fa-list"></i>Category List</a></li>
                 </ul>
             </div>
 
-            <a href="#comments" class="d-block py-2 px-3"><i class="fas fa-comments"></i> Manage Comments</a>
-            <a href="#users" class="d-block py-2 px-3"><i class="fas fa-users"></i> Manage Users</a>
+            <a href="@Url.Action("CommentList", "DashBoard")" class="d-block py-2 px-3"><i class="fas fa-comments"></i> Manage Comments</a>
+
+            <div class="dropdown mt-3">
+                <a class="dropdown-toggle d-block py-2 px-3" id="manageUsersDropdown" data-bs-toggle="dropdown" href="#" role="button" aria-expanded="false">
+                    <i class="fas fa-users"></i>Manage Users
+                </a>
+                <ul class="dropdown-menu bg-info" aria-labelledby="manageUsersDropdown">
+                    <li><a class="dropdown-item" href="@Url.Action("AllUsers", "UserManage")"> <i class="fas fa-user-check"></i>Active Users</a></li>
+                    <li><a class="dropdown-item" href="@Url.Action("UnblockUser", "UserManage")"><i class="fas fa-user-slash"></i>Blocked Users List</a></li>
+                </ul>
+            </div>
+
+           
             <!--    <a href="#settings" class="d-block py-2 px-3"><i class="fas fa-cog"></i> Settings</a> -->
             <a href="@Url.Action("Logout", "UserManage")" class="d-block py-2 px-3"><i class="fas fa-sign-out-alt"></i> Logout</a>
         </nav>
@@ -55,16 +66,7 @@
                     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
                         <span class="navbar-toggler-icon"></span>
                     </button>
-                    <div class="collapse navbar-collapse" id="navbarNav">
-                        <ul class="navbar-nav ms-auto">
-                            <li class="nav-item">
-                                <a class="nav-link" href="#profile"><i class="fas fa-user-circle"></i> Profile</a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link" href="#logout"><i class="fas fa-sign-out-alt"></i> Logout</a>
-                            </li>
-                        </ul>
-                    </div>
+                    
                 </div>
             </nav>
 

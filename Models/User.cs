@@ -25,7 +25,7 @@ namespace Blog_Website.Models
 
         public string? UserType { get; set; }
         public DateTime? CreatedDate { get; set; }
-        public bool? Is_Deleted { get; set; } = false;
+        public bool Is_Deleted { get; set; } = false;
         // Navigation property for comments
         // public virtual ICollection<Comment> Comments { get; set; }
     }

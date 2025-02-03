@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using System.Net.Mail;
 using System.Net;
+using Microsoft.EntityFrameworkCore;
 
 namespace Blog_Website.Controllers
 {
@@ -11,8 +12,6 @@ namespace Blog_Website.Controllers
     {
         private readonly ApplicationDbContext _context;
         private readonly IConfiguration _configuration;
-
-        public object GoogleJsonWebSignature { get; private set; }
 
         public UserManageController(ApplicationDbContext context, IConfiguration configuration)
         {
@@ -27,7 +26,7 @@ namespace Blog_Website.Controllers
         }
 
         [HttpPost]
-        public IActionResult SignUp(User user)
+        public async Task<IActionResult> SignUp(User user)
         {
             if (ModelState.IsValid)
             {
@@ -36,16 +35,16 @@ namespace Blog_Website.Controllers
                 user.Password = passwordHasher.HashPassword(user, user.Password);
 
                 // Add the user to the database
-                _context.Users.Add(user);
-                _context.SaveChanges();
+                await _context.Users.AddAsync(user);
+                await _context.SaveChangesAsync();
 
                 return RedirectToAction("Login");
             }
+
             if (!ModelState.IsValid)
             {
                 foreach (var error in ModelState.Values.SelectMany(v => v.Errors))
                 {
-                    
                     Console.WriteLine(error.ErrorMessage); // Log the error messages
                 }
             }
@@ -59,15 +58,16 @@ namespace Blog_Website.Controllers
             return View();
         }
 
-
         [HttpPost]
-        public IActionResult Login(string email, string password)
+        public async Task<IActionResult> Login(string email, string password)
         {
-            var user = _context.Users.FirstOrDefault(u => u.Email == email); // Retrieve user by email
+            var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == email); // Retrieve user by email
             if (user != null)
             {
                 // Verify the hashed password
+                
                 var passwordHasher = new PasswordHasher<User>();
+                //var pwd = PasswordHasher.HashPassword(password);
                 var verificationResult = passwordHasher.VerifyHashedPassword(user, user.Password, password);
 
                 if (verificationResult == PasswordVerificationResult.Success)
@@ -85,6 +85,7 @@ namespace Blog_Website.Controllers
             ModelState.AddModelError("", "Invalid login attempt.");
             return View();
         }
+
         public IActionResult Logout()
         {
             HttpContext.Session.Clear(); // Clear session data
@@ -92,7 +93,7 @@ namespace Blog_Website.Controllers
         }
 
         // Forgot Password
-        private void SendEmail(string toEmail, string subject, string body)
+        private async Task SendEmailAsync(string toEmail, string subject, string body)
         {
             var smtpClient = new SmtpClient("smtp.example.com") // Replace with your SMTP details
             {
@@ -111,50 +112,11 @@ namespace Blog_Website.Controllers
 
             mailMessage.To.Add(toEmail);
 
-            smtpClient.Send(mailMessage);
+            await smtpClient.SendMailAsync(mailMessage);
         }
 
+        
 
-        [HttpGet]
-        public IActionResult ForgotPassword()
-        {
-            return View();
-        }
-
-
-        //[HttpPost]
-        //[ValidateAntiForgeryToken]
-        //public IActionResult ForgotPassword(string email)
-        //{
-        //    // Find the user by email
-        //    var user = _context.Users.FirstOrDefault(u => u.Email == email);
-        //    if (user == null)
-        //    {
-        //        // Email not found
-        //        TempData["Error"] = "Email not registered.";
-        //        return View();
-        //    }
-
-        //    // Generate a unique reset token
-        //    var token = Guid.NewGuid().ToString(); // You can use other methods like JWT or ASP.NET Identity token generation
-
-        //    // Save the token to the database (or a secure store)
-        //    user.ResetToken = token;
-        //    user.ResetTokenExpiry = DateTime.Now.AddHours(1); // Token expires in 1 hour
-        //    _context.SaveChanges();
-
-        //    // Create reset link
-        //    var resetLink = Url.Action("ResetPassword", "UserManage", new { token = token }, Request.Scheme);
-
-        //    // Send email
-        //    SendEmail(user.Email, "Password Reset Request",
-        //        $"Click the link to reset your password: <a href='{resetLink}'>Reset Password</a>");
-
-        //    TempData["Success"] = "Password reset link has been sent to your email.";
-        //    return RedirectToAction("ForgotPassword");
-        //}
-
-        // Password Change
         [HttpGet]
         public IActionResult ChangePassword()
         {
@@ -162,80 +124,46 @@ namespace Blog_Website.Controllers
         }
 
         [HttpPost]
-        public IActionResult ChangePassword(ChangePasswordViewModel model)
+        public async Task<IActionResult> ChangePassword(ChangePasswordViewModel model)
         {
-            if (ModelState.IsValid)
+            // Get the logged-in user
+            var userId = HttpContext.Session.GetInt32("UserId");
+            var user = await _context.Users.FirstOrDefaultAsync(u => u.Id == userId && u.Email == model.Email);
+
+            if (user == null)
             {
-                // Get the logged-in user
-                var userId = HttpContext.Session.GetInt32("UserId");
-                var user = _context.Users.FirstOrDefault(u => u.Id == userId);
-
-                if (user == null)
-                {
-                    return RedirectToAction("Login"); // Redirect if user is not found
-                }
-
-                // Verify the current password
-                var passwordHasher = new PasswordHasher<User>();
-                var verificationResult = passwordHasher.VerifyHashedPassword(user, user.Password, model.CurrentPassword);
-
-                if (verificationResult != PasswordVerificationResult.Success)
-                {
-                    ModelState.AddModelError("", "Current password is incorrect.");
-                    return View(model);
-                }
-
-                // Hash the new password before saving
-                user.Password = passwordHasher.HashPassword(user, model.NewPassword);
-                _context.SaveChanges();
-
-                TempData["Message"] = "Password changed successfully!";
-                return RedirectToAction("Login", "UserManage"); // Redirect to the dashboard after changing password
+                return RedirectToAction("Login"); // Redirect if user is not found
             }
 
-            return View(model);
+            // Verify the current password
+            var passwordHasher = new PasswordHasher<User>();
+            var verificationResult = passwordHasher.VerifyHashedPassword(user, user.Password, model.CurrentPassword);
+
+            if (verificationResult != PasswordVerificationResult.Success)
+            {
+                ModelState.AddModelError("", "Current password is incorrect.");
+                return View(model);
+            }
+
+            // Hash the new password before saving
+            user.Password = passwordHasher.HashPassword(user, model.NewPassword);
+            _context.Users.Update(user); 
+            await _context.SaveChangesAsync();
+
+            TempData["Message"] = "Password changed successfully!";
+            return RedirectToAction("Login", "UserManage"); // Redirect after password change
         }
 
 
-        //public async Task<IActionResult> SignInWithGoogle(string idToken)
-        //{
-        //    try
-        //    {
-        //        var payload = await GoogleJsonWebSignature.ValidateAsync(idToken, new GoogleJsonWebSignature.ValidationSettings
-        //        {
-        //            Audience = new[] { _configuration["Google:ClientId"] }
-        //        });
 
-        //        var user = _context.Users.FirstOrDefault(u => u.Email == payload.Email);
-
-        //        if (user == null)
-        //        {
-        //            user = new User
-        //            {
-        //                Email = payload.Email,
-        //                FirstName = payload.GivenName,
-        //                LastName = payload.FamilyName,
-        //                Password = "" // Password not needed for Google sign-in
-        //            };
-        //            _context.Users.Add(user);
-        //            _context.SaveChanges();
-        //        }
-
-        //        return RedirectToAction("Dashboard");
-        //    }
-        //    catch
-        //    {
-        //        return RedirectToAction("Login");
-        //    }
-        //}
-        public IActionResult SignInWithFacebook(string accessToken)
+        public async Task<IActionResult> SignInWithFacebook(string accessToken)
         {
             // Mock logic for Facebook sign-in (replace with actual API call)
             var mockEmail = "fbuser@example.com";
             var mockFirstName = "Facebook";
             var mockLastName = "User";
 
-            var user = _context.Users.FirstOrDefault(u => u.Email == mockEmail);
+            var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == mockEmail);
 
             if (user == null)
             {
@@ -246,11 +174,141 @@ namespace Blog_Website.Controllers
                     LastName = mockLastName,
                     Password = "" // Password not needed for Facebook sign-in
                 };
-                _context.Users.Add(user);
-                _context.SaveChanges();
+                await _context.Users.AddAsync(user);
+                await _context.SaveChangesAsync();
             }
 
             return RedirectToAction("Dashboard");
         }
+
+        //Adding User
+
+        public async Task<IActionResult> AllUsers()
+        {
+            var users=await _context.Users.Where(u=>!u.Is_Deleted).ToListAsync();
+            return View(users);
+        }
+        //public IActionResult Create()
+        //{
+        //    return View();
+        //}
+
+        //// POST: Users/Create
+        //[HttpPost]
+        //[ValidateAntiForgeryToken]
+        //public async Task<IActionResult> Create([Bind("Email,Password,FirstName,LastName,UserType")] User user)
+        //{
+        //    if (ModelState.IsValid)
+        //    {
+        //        user.CreatedDate = DateTime.UtcNow;
+        //        _context.Add(user);
+        //        await _context.SaveChangesAsync();
+        //        return RedirectToAction(nameof(Index));
+        //    }
+        //    return View(user);
+        //}
+
+        //// GET: Users/Edit/5
+        //public async Task<IActionResult> Edit(int? id)
+        //{
+        //    if (id == null)
+        //    {
+        //        return NotFound();
+        //    }
+
+        //    var user = await _context.Users.FindAsync(id);
+        //    if (user == null)
+        //    {
+        //        return NotFound();
+        //    }
+        //    return View(user);
+        //}
+
+        //// POST: Users/Edit/5
+        //[HttpPost]
+        //[ValidateAntiForgeryToken]
+        //public async Task<IActionResult> Edit(int id, [Bind("Id,Email,Password,FirstName,LastName,UserType,CreatedDate")] User user)
+        //{
+        //    if (id != user.Id)
+        //    {
+        //        return NotFound();
+        //    }
+
+        //    if (ModelState.IsValid)
+        //    {
+        //        try
+        //        {
+        //            _context.Update(user);
+        //            await _context.SaveChangesAsync();
+        //        }
+        //        catch (DbUpdateConcurrencyException)
+        //        {
+        //            if (!_context.Users.Any(e => e.Id == user.Id))
+        //            {
+        //                return NotFound();
+        //            }
+        //            else
+        //            {
+        //                throw;
+        //            }
+        //        }
+        //        return RedirectToAction(nameof(Index));
+        //    }
+        //    return View(user);
+        //}
+
+        //// GET: Users/Delete/5
+        //public async Task<IActionResult> Delete(int? id)
+        //{
+        //    if (id == null)
+        //    {
+        //        return NotFound();
+        //    }
+
+        //    var user = await _context.Users
+        //        .FirstOrDefaultAsync(m => m.Id == id);
+        //    if (user == null)
+        //    {
+        //        return NotFound();
+        //    }
+
+        //    return View(user);
+        //}
+
+        //Block Users
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> BlockConfirmed(int id)
+        {
+            var user = await _context.Users.FindAsync(id);
+            if (user != null)
+            {
+                user.Is_Deleted = true;
+                await _context.SaveChangesAsync();
+            }
+            return RedirectToAction("AllUsers");
+        }
+
+        //Unblock Users
+        [HttpGet]
+        public async Task<IActionResult> UnblockUser()
+        {
+            var users = await _context.Users.Where(u => u.Is_Deleted).ToListAsync();
+            return View(users);
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> UnblockUser(int id)
+        {
+            var user = await _context.Users.FindAsync(id);
+            if (user != null)
+            {
+                user.Is_Deleted = false;
+                await _context.SaveChangesAsync();
+            }
+            return RedirectToAction("AllUsers");
+        }
+
+
     }
 }

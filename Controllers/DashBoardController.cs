@@ -3,23 +3,20 @@ using Blog_Website.Models;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System.Reflection.Metadata;
-using System.Linq;
 
 namespace Blog_Website.Controllers
 {
-    [AuthorizeUser] // Ensures only logged-in users can access this controller
+    [AuthorizeUser]
     public class DashBoardController : Controller
     {
-
         private readonly ApplicationDbContext _context;
-        //For Category Manage
-        private static List<Category> _categories = new List<Category>();
+
         public DashBoardController(ApplicationDbContext context)
         {
             _context = context;
         }
 
-        public IActionResult Index()
+        public async Task<IActionResult> Index()
         {
             var userId = HttpContext.Session.GetInt32("UserId");
             var userEmail = HttpContext.Session.GetString("UserEmail");
@@ -30,133 +27,99 @@ namespace Blog_Website.Controllers
                 return RedirectToAction("Login", "UserManage");
             }
 
-            // Prepare the model
             var model = new Blogg_Model
             {
-                UserId = userId.Value, // Assuming UserId is nullable
-                                       // Set other properties as needed, like default values for Dashboard
+                UserId = userId.Value
             };
 
             ViewBag.UserId = userId;
             ViewBag.UserEmail = userEmail;
             ViewBag.UserName = userName;
 
-            // Fetch statistics for the dashboard
-            ViewBag.PostCount = _context.Bloggers.Count(); // Count of posts
-            ViewBag.CategoryCount = _context.Categories.Select(b => b.Name).Distinct().Count(); // Count of distinct categories
-            ViewBag.CommentCount = _context.Comments.Count(); // Count of comments
-            ViewBag.UserCount = _context.Users.Count(); // Count of users
+            // Fetch statistics asynchronously
+            ViewBag.PostCount = await _context.Bloggers
+                .Where(post=>!post.Is_Deleted)
+                .CountAsync();
+            ViewBag.CategoryCount = await _context.Categories.Select(b => b.Name).Distinct().CountAsync();
+            ViewBag.CommentCount = await _context.Comments
+                .Where(C => !C.Is_Deleted)
+                .CountAsync();
+            ViewBag.UserCount = await _context.Users.CountAsync();
 
-            // Fetch recent posts (e.g., last 5 posts)
-            var recentPosts = _context.Bloggers
-                  .Where(post => !post.Is_Deleted)
+            // Fetch recent posts asynchronously
+            var recentPosts = await _context.Bloggers
+                .Where(post => !post.Is_Deleted)
                 .OrderByDescending(post => post.CreatedDate)
-                
                 .Take(5)
-                .ToList();
+                .ToListAsync();
 
-            return View("Dashboard", recentPosts); // Pass the recentPosts to the view
+            return View("Dashboard", recentPosts);
         }
 
-        // GET: Render the form
-        public IActionResult CreatePost()
-        {
-            return View();
-        }
-
-        // POST: Save the blog post
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public IActionResult CreatePost(Blogg_Model model, IFormFile Image)
-         {
+        public async Task<IActionResult> CreatePost(Blogg_Model model, IFormFile Image)
+        {
             var userId = HttpContext.Session.GetInt32("UserId");
             if (ModelState.IsValid)
             {
-
                 if (Image != null && Image.Length > 0)
                 {
-                    // Generate a unique file name and save the image
                     var fileName = $"{Guid.NewGuid()}_{Image.FileName}";
                     var filePath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot/images", fileName);
 
                     using (var stream = new FileStream(filePath, FileMode.Create))
                     {
-                        Image.CopyTo(stream);
+                        await Image.CopyToAsync(stream);
                     }
 
-                    // Save the image path to the model
                     model.ImagePath = $"/images/{fileName}";
-                   
                 }
+
                 model.UserId = (int)userId;
-                // Set default values for CreatedDate
                 model.CreatedDate = DateTime.Now;
-               
 
-                // Add the model to the database
                 _context.Bloggers.Add(model);
-                _context.SaveChanges();
+                await _context.SaveChangesAsync();
 
-                // Redirect to the PostDetail view with the new blog post ID
                 return RedirectToAction("PostDetail", new { id = model.Id });
             }
 
-            //Error check of Model
-
-            // Log errors when ModelState is invalid
-            var errors = ModelState.Values.SelectMany(v => v.Errors);
-            foreach (var error in errors)
-            {
-                Console.WriteLine($"ModelState Error: {error.ErrorMessage}");
-            }
-
-            //Model Error Dbugg close
-
-            // If the model is invalid, pass it to the Index view
             TempData["ErrorMessage"] = "There were some errors with your submission. Please correct them and try again.";
-            TempData["InvalidModel"] = Newtonsoft.Json.JsonConvert.SerializeObject(model); // Serialize model if needed
+            TempData["InvalidModel"] = Newtonsoft.Json.JsonConvert.SerializeObject(model);
 
             return RedirectToAction("CreatePost");
         }
 
-        //Edit 
-
         [HttpGet]
-        public IActionResult EditPost(int id)
+        public async Task<IActionResult> EditPost(int id)
         {
-            // Fetch the blog post by ID
-            var post = _context.Bloggers.FirstOrDefault(p => p.Id == id);
-
+            var post = await _context.Bloggers.FirstOrDefaultAsync(p => p.Id == id);
             if (post == null)
             {
                 return NotFound();
             }
-
             return View(post);
         }
 
         [HttpPost]
-        public IActionResult EditPost(Blogg_Model model)
+        public async Task<IActionResult> EditPost(Blogg_Model model)
         {
             if (!ModelState.IsValid)
             {
                 return View(model);
             }
 
-            // Fetch the existing post
-            var existingPost = _context.Bloggers.FirstOrDefault(p => p.Id == model.Id);
-
+            var existingPost = await _context.Bloggers.FirstOrDefaultAsync(p => p.Id == model.Id);
             if (existingPost == null)
             {
                 return NotFound();
             }
 
-            // Update the fields
             existingPost.BlogTitle = model.BlogTitle;
             existingPost.Content = model.Content;
             existingPost.Category = model.Category;
 
-            // Optional: Handle image upload
             if (Request.Form.Files.Count > 0)
             {
                 var file = Request.Form.Files[0];
@@ -165,85 +128,152 @@ namespace Blog_Website.Controllers
                     var filePath = Path.Combine("wwwroot/images", file.FileName);
                     using (var stream = new FileStream(filePath, FileMode.Create))
                     {
-                        file.CopyTo(stream);
+                        await file.CopyToAsync(stream);
                     }
 
                     existingPost.ImagePath = "/images/" + file.FileName;
                 }
             }
 
-            _context.SaveChanges();
-
+            await _context.SaveChangesAsync();
             return RedirectToAction("PostDetail", new { id = model.Id });
         }
 
-
-        //Delete
-
         [HttpGet]
-        public IActionResult DeletePost(int id)
+        public async Task<IActionResult> DeletePost(int id)
         {
-            // Fetch the post from the database using the ID (replace with your actual DB logic)
-            var post = _context.Bloggers.FirstOrDefault(b => b.Id == id);
-
+            var post = await _context.Bloggers.FirstOrDefaultAsync(b => b.Id == id);
             if (post == null)
             {
-                return NotFound(); // Return a 404 if the post doesn't exist
+                return NotFound();
             }
-
-            return View(post); // Pass the post model to the view
+            return View(post);
         }
 
         [HttpPost]
-
-        public IActionResult DeletePostConfirmed(int id)
+        public async Task<IActionResult> DeletePostConfirmed(int id)
         {
-            var post= _context.Bloggers.FirstOrDefault(p=>p.Id == id);
+            var post = await _context.Bloggers.FirstOrDefaultAsync(p => p.Id == id);
             if (post != null)
             {
                 post.Is_Deleted = true;
-                _context.SaveChanges();
+                await _context.SaveChangesAsync();
             }
             return RedirectToAction("Index");
         }
 
-        //public IActionResult PostDetail(int id)
-        //{
-        //    // Fetch the blog post by ID
-        //    var blogPost = _context.Bloggers.FirstOrDefault(b => b.Id == id);
-
-        //    // If the blog post is not found, return a "Not Found" page or redirect
-        //    if (blogPost == null)
-        //    {
-        //        return NotFound();
-        //    }
-
-        //    // Pass the blog post to the view
-        //    return View(blogPost);
-        //}
-
-        public IActionResult PostDetail(int id)
+        public async Task<IActionResult> PostDetail(int id)
         {
-            // Fetch the blog post by ID
-            var blogPost = _context.Bloggers.FirstOrDefault(b => b.Id == id);
-
+            var blogPost = await _context.Bloggers.FirstOrDefaultAsync(b => b.Id == id);
             if (blogPost == null)
             {
                 return NotFound();
             }
 
-            // Fetch comments for the post
-            var comments = _context.Comments
+            var comments = await _context.Comments
                 .Where(c => c.PostId == id)
                 .OrderByDescending(c => c.CreatedDate)
-                .ToList();
+                .ToListAsync();
 
-            // Pass the blog post and comments to the view
             ViewBag.Comments = comments;
-
             return View(blogPost);
         }
 
+        public async Task<IActionResult> AllPosts()
+        {
+            var blogPosts = await _context.Bloggers
+                .Where(p => !p.Is_Deleted)
+                .ToListAsync();
+
+            return View(blogPosts);
+        }
+
+        //Categories
+        [HttpGet]
+        public async Task<IActionResult> Categories()
+        {
+            var categories = await _context.Categories.Where(c => !c.Is_Deleted).ToListAsync();
+            return View(categories);
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> CreateCategory()
+        {
+            return View();
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> CreateCategory(Category category)
+        {
+            if (ModelState.IsValid)
+            {
+                category.CreatedDate = DateTime.Now;
+                _context.Categories.Add(category);
+                await _context.SaveChangesAsync();
+                return RedirectToAction("Categories");
+            }
+
+            return View(category);
+        }
+
+        public async Task<IActionResult> EditCategory(int id)
+        {
+            var category = await _context.Categories.FirstOrDefaultAsync(c => c.CategoryId == id);
+            if (category == null)
+            {
+                return NotFound();
+            }
+            return View(category);
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> EditCategory(Category category)
+        {
+            var existingCategory = await _context.Categories.FirstOrDefaultAsync(c => c.CategoryId == category.CategoryId);
+            if (existingCategory == null)
+            {
+                return NotFound();
+            }
+
+            if (ModelState.IsValid)
+            {
+                existingCategory.Name = category.Name;
+                existingCategory.Description = category.Description;
+                await _context.SaveChangesAsync();
+                return RedirectToAction("Categories");
+            }
+
+            return View(category);
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> DeleteCategory(int id)
+        {
+            var category = await _context.Categories.FirstOrDefaultAsync(c => c.CategoryId == id);
+            if (category == null)
+            {
+                return NotFound();
+            }
+            return View(category);
+        }
+
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> DeleteCategoryConfirmed(int id)
+        {
+            var category = await _context.Categories.FirstOrDefaultAsync(c => c.CategoryId == id);
+            if (category != null)
+            {
+                category.Is_Deleted=true;
+                await _context.SaveChangesAsync();
+            }
+            return RedirectToAction("Categories");
+        }
+
+        //Comment
 
         [HttpPost]
         [ValidateAntiForgeryToken]
@@ -258,7 +288,7 @@ namespace Blog_Website.Controllers
             var comment = new Comment
             {
                 PostId = PostId,
-                UserId= UserId,
+                UserId = UserId,
                 CommenterName = CommenterName,
                 Text = Text,
                 CreatedDate = DateTime.Now
@@ -269,116 +299,102 @@ namespace Blog_Website.Controllers
 
             return RedirectToAction("PostDetail", new { id = PostId });
         }
+        //Comment Management
 
-
-        // All posts
-        public IActionResult AllPosts()
+        public async Task<IActionResult> CommentList()
         {
-            // Fetch all blog posts from the database
-            var blogPosts = _context.Bloggers
-                .Where(p=>!p.Is_Deleted)
-                .ToList();
+            var comments = await (from c in _context.Comments
+                                  join b in _context.Bloggers on c.PostId equals b.Id
+                                  where !c.Is_Deleted
+                                  select new
+                                  {
+                                      c.CommentId,
+                                      c.CommenterName,
+                                      c.CreatedDate,
+                                      c.Text,
+                                      PostTitle = b.BlogTitle, // Selecting the content from Blog
+                                      AuthorName = b.Name,
+                                      BlogTitle = b.BlogTitle
+                                  }).ToListAsync();
 
-            // Pass the list of blog posts to the view
-            return View(blogPosts);
+            return View(comments);
         }
 
-        //Category Mangement
-
-        
-
-        // Display Categories
-        public IActionResult Categories()
-        {
-            var categories = _context.Categories.ToList(); // Fetch categories from the database
-            return View(categories); // Pass the list to the view
-        }
-
-        // Create Category (GET)
-        public IActionResult CreateCategory()
-        {
-            return View();
-        }
-
-        // Create Category (POST)
         [HttpPost]
-        [ValidateAntiForgeryToken]
-        public IActionResult CreateCategory(Category category)
+        public async Task<IActionResult> DeleteComment(int id)
         {
-            if (ModelState.IsValid)
-            {
-                
-                category.CreatedDate = DateTime.Now;
-                _context.Categories.Add(category);
-                _context.SaveChanges();
-                return RedirectToAction("Categories");
-            }
-            if (!ModelState.IsValid)
-            {
-                foreach (var error in ModelState.Values.SelectMany(v => v.Errors))
-                {
+            var comment = await _context.Comments.FindAsync(id);
 
-                    Console.WriteLine(error.ErrorMessage); // Log the error messages
-                }
-            }
-            return View(category);
-        }
-
-        // Edit Category (GET)
-        public IActionResult EditCategory(int id)
-        {
-            var category = _context.Categories.FirstOrDefault(c => c.CategoryId == id);
-            if (category == null)
-            {
-                return NotFound();
-            }
-            return View(category);
-        }
-
-        // Edit Category (POST)
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public IActionResult EditCategory(Category category)
-        {
-            var existingCategory = _context.Categories.FirstOrDefault(c => c.CategoryId == category.CategoryId);
-            if (existingCategory == null)
+            if (comment == null)
             {
                 return NotFound();
             }
 
-            if (ModelState.IsValid)
-            {
-                existingCategory.Name = category.Name;
-                existingCategory.Description = category.Description;
-                _context.SaveChanges();
-                return RedirectToAction("Categories");
-            }
-            return View(category);
+            // Soft delete approach
+            comment.Is_Deleted = true;
+            _context.Comments.Update(comment);
+
+            // Hard delete
+            // _context.Comments.Remove(comment);
+
+            await _context.SaveChangesAsync();
+
+            return RedirectToAction("CommentList");
         }
 
-        // Delete Category (GET)
-        public IActionResult DeleteCategory(int id)
+
+        //
+
+        // User Dashboard View
+        public async Task<IActionResult> User_Dashboard()
         {
-            var category = _context.Categories.FirstOrDefault(c => c.CategoryId == id);
-            if (category == null)
-            {
-                return NotFound();
-            }
-            return View(category);
+            var categories = await _context.Bloggers
+                .Where(b => !b.Is_Deleted)
+                .Select(b => b.Category)
+                .Distinct()
+                .ToListAsync();
+
+            var posts = await _context.Comments
+                .Where(b => !b.Is_Deleted)
+                .Include(b => b.Text)
+                .OrderByDescending(b => b.CreatedDate)
+                .ToListAsync();
+
+            ViewBag.Categories = categories;
+            return View(posts);
         }
 
-        // Delete Category (POST)
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public IActionResult DeleteCategoryConfirmed(int id)
+        // Fetch posts by category
+        public async Task<IActionResult> GetPostsByCategory(string category)
         {
-            var category = _context.Categories.FirstOrDefault(c => c.CategoryId == id);
-            if (category != null)
-            {
-                _context.Categories.Remove(category);
-                _context.SaveChanges();
-            }
-            return RedirectToAction("Categories");
+            var posts = await (from blog in _context.Bloggers
+                               join comment in _context.Comments
+                               on blog.Id equals comment.PostId into blogComments
+                               where blog.Category == category && !blog.Is_Deleted
+                               orderby blog.CreatedDate descending
+                               select new
+                               {
+                                   blog.Id,
+                                   blog.Name,
+                                   blog.BlogTitle,
+                                   blog.Content,
+                                   blog.ImagePath,
+                                   blog.CreatedDate,
+                                   blog.Category,
+                                   blog.Is_Deleted,
+                                   Comments = blogComments.Where(c => !c.Is_Deleted) // Filtering non-deleted comments
+                               }).ToListAsync();
+
+            // Return the posts with their associated comments
+            // We need to map this anonymous object to a proper model if you want to use it in the view
+            return PartialView("_PostList", posts);
         }
+
+
+
+
+
+
+
     }
 }

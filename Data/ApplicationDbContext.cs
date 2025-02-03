@@ -15,6 +15,8 @@ namespace Blog_Website.Data
 
         public DbSet<Category> Categories { get; set; }
 
+        public DbSet<ChangePasswordViewModel> ChangePwd { get; set; }
+
         protected override void OnModelCreating(ModelBuilder builder)
         {
             base.OnModelCreating(builder);

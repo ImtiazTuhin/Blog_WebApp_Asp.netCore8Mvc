@@ -1,0 +1,50 @@
+﻿@model IEnumerable<Blog_Website.Models.Blogg_Model>
+
+@{
+    ViewData["Title"] = "User Dashboard";
+}
+
+<div class="container-fluid">
+    <div class="row">
+        <!-- Sidebar (Category List) -->
+        <nav class="col-md-3 col-lg-2 bg-dark text-white p-3">
+            <h3 class="text-center">Categories</h3>
+            <ul class="list-group">
+                @foreach (var category in ViewBag.Categories)
+                {
+                    <li class="list-group-item list-group-item-action bg-secondary text-white"
+                        onclick="loadPostsByCategory('@category')"
+                        style="cursor: pointer;">
+                        @category
+                    </li>
+                }
+            </ul>
+        </nav>
+
+        <!-- Main Content -->
+        <main class="col-md-9 col-lg-10 p-4">
+            <h2>All Posts</h2>
+            <div id="postContainer">
+                @await Html.PartialAsync("_PostList", Model)
+            </div>
+        </main>
+    </div>
+</div>
+
+<script>
+    function loadPostsByCategory(category) {
+        $.ajax({
+            url: '/DashBoard/GetPostsByCategory?category=' + encodeURIComponent(category),
+            type: 'GET',
+            success: function (data) {
+                $('#postContainer').html(data);
+            },
+            error: function () {
+                alert('Failed to load posts.');
+            }
+        });
+    }
+</script>
+
+<!-- Include jQuery for AJAX -->
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
