@@ -56,6 +56,15 @@ namespace Blog_Website.Controllers
             return View("Dashboard", recentPosts);
         }
 
+        [HttpGet]
+        public IActionResult CreatePost()
+        {
+            
+
+            return View("CreatePost");
+        }
+
+
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> CreatePost(Blogg_Model model, IFormFile Image)
